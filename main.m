@@ -6,7 +6,7 @@ kCatGef = 1;
 % Set the kcat of GAP
 kCatGap = 2^-2; %
 % Set the feedback strengths (propensity to bind to RasGtp than RasGdp)
-kOnGtp2KOnGdp = 2^0; 
+kOnGtp2KOnGdp = 2^0;
 % Set the SOS unbinding rate
 kOffGdp = 2^-2;
 % Set the koff of GEF from GTP and GDP the same (as default)
@@ -187,7 +187,7 @@ lastNormRasGtpArray = normalizedRasGtpEveryUnitTime(end,:);
 filename = sprintf('.\\output%d\\variables\\endPointNormXDistribution.mat', folderIndex);
 save(filename,'lastNormRasGtpArray');
 
-% Check whether avg x-value is too low. If so, DIP test is not possible. 
+% Check whether avg x-value is too low. If so, DIP test is not possible.
 if sum(lastNormRasGtpArray) / length(lastNormRasGtpArray) > LOWEST_AVG_X_REQD_FOR_DIP_TEST
     bootStrapSampleSize = 100;
     % Run the DIP test storing the result to p-value. Low p-value indicates
