@@ -1,105 +1,63 @@
-function [distributionType, secondMean] = histogramGaussFit(fName, x, y, targetX, type2DistFactor)
-%     figure;
-%     normalizedRasGtpEverySecond = load(fName).normalizedRasGtpEverySecond;
-%     h = histogram(normalizedRasGtpEverySecond(end,:),'BinWidth',0.05,'Normalization','probability', 'FaceColor', '#ffc0cb', 'EdgeColor', 'white');
+function [distributionType, higherGaussianMean] = histogramGaussFit(x, y, rateLawXVal, typeOffset)
 
+workspace;  % Make sure the workspace panel is showing.
+format long g;
+format compact;
 
-    scatter(x,y, 30, 'filled');
-%     txt = ['p=',num2str(p,3)];
-%     text(0.75,0.45,txt,'FontSize',16,'FontWeight','bold');
-%     xlim ([0 1])
-%     ylim ([0 max(ceil(max(y)*10)/10, .5)])
-%     ylim ([0 .7])
-%     set(gca, 'CLim',[0 0.2],'FontSize',12,'FontWeight','bold','LineWidth',2);
-%     title(sprintf('Histogram at t=%.4f', t))
-%     xlabel('RasGTP/Ras')
-%     ylabel('Frequency')
-    
-    workspace;  % Make sure the workspace panel is showing.
-    format long g;
-    format compact;
-    fontSize = 20;
+% Adjusted Initial Gaussian Parameters
+initialGuesses = [[0.0 0.5]', [0.5 0.1]'];  % Slightly adjusted for a broader starting point
 
-    % First specify how many Gaussians there will be.
-    numGaussians = 2;
+% Add a little noise so that our first guess is not on a potential singular point.
+noiseToAdd = rand(size(initialGuesses)) * 0.01;  % Adding small noise
+startingGuesses = reshape(initialGuesses + noiseToAdd', 1, []);
 
-    % Initial Gaussian Parameters
-    initialGuesses = [[0 .5 ]', [.068 .1]'];
-    % Add a little noise so that our first guess is not dead on accurate.
-    startingGuesses = reshape(initialGuesses', 1, []);
+global c NumTrials TrialError
 
-    global c NumTrials TrialError
-    % 	warning off
+% Initializations
+NumTrials = 0;  % Track trials
+TrialError = 0; % Track errors
 
-    % Initializations
-    NumTrials = 0;  % Track trials
-    TrialError = 0; % Track errors
+tFit = reshape(x, 1, []);
+y = reshape(y, 1, []);
 
-    
-    
-    tFit = reshape(x, 1, []);
-    y = reshape(y, 1, []);
+% Perform an iterative fit using the FMINSEARCH function to optimize the height, width, and center of the multiple Gaussians.
+options = optimset('TolX', 1e-4, 'MaxFunEvals', 10^12);  % Determines how close the model must fit the data
+% Set fminsearch() options.
+options.TolFun = 1e-4;
+options.TolX = 1e-4;
+options.MaxIter = 100000;
 
-    %-------------------------------------------------------------------------------------------------------------------------------------------
-    % Perform an iterative fit using the FMINSEARCH function to optimize the height, width and center of the multiple Gaussians.
-    options = optimset('TolX', 1e-4, 'MaxFunEvals', 10^12);  % Determines how close the model must fit the data
-    % First, set some options for fminsearch().
-    options.TolFun = 1e-4;
-    options.TolX = 1e-4;
-    options.MaxIter = 100000;
+% Run optimization (fitting)
+warning('off', 'all')
+[parameter, ~, ~, ~] = fminsearch(@(lambda)(fitgauss(lambda, tFit, y)), startingGuesses, options);
+warning('on', 'all')
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % HEAVY LIFTING DONE RIGHT HERE:
-    % Run optimization
-    [parameter, fval, flag, output] = fminsearch(@(lambda)(fitgauss(lambda, tFit, y)), startingGuesses, options);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    
-    %----------------------------------------------------------------------------------------------------------------
-    % Now plot results.
-    yhat = PlotComponentCurves(x, y, tFit, c, parameter);
-    % Compute the residuals between the actual y and the estimated y and put that into the graph's title.
-%     meanResidual = mean(abs(y - yhat));
-%     fprintf('The mean of the absolute value of the residuals is %f.\n', meanResidual);
-%     caption = sprintf('Estimation of %d Gaussian Curves that will fit data.  Mean Residual = %f.', numGaussians, meanResidual);
-%     title(caption, 'FontSize', fontSize, 'Interpreter', 'none');
-%     drawnow;
-
-    % Make table for the fitted, estimated results.
-    % First make numGaussians row by 3 column matrix: Column 1 = amplitude, column 2 = mean, column 3 = width.
-    % 	parameter % Print to command window.
-    estimatedMuSigma = reshape(parameter, 2, [])';
-    gaussianParameters = [c, estimatedMuSigma];
-    % Now sort parameters in order of increasing mean
-    gaussianParameters = sortrows(gaussianParameters, 2);
-%     tActual % Display actual table in the command window.
-    % Create table of the output parameters and display it below the actual, true parameters.
-%     tEstimate = table((1:numGaussians)', c(:), estimatedMuSigma(:, 1), estimatedMuSigma(:, 2), 'VariableNames', {'Number', 'Amplitude', 'Mean', 'Width'})
-
-    secondMean = gaussianParameters(2, 2);
-    if (gaussianParameters(2, 2) - targetX)*targetX > type2DistFactor % g = 0.02/t + t
-        distributionType = 2;
-    else
-        distributionType = 1;
-    end
+% Handle results.
+plotComponentCurves(tFit, c, parameter);
+estimatedMuSigma = reshape(parameter, 2, [])';
+gaussianParameters = [c, estimatedMuSigma];
+% Sort parameters in order of increasing mean
+gaussianParameters = sortrows(gaussianParameters, 2);
+higherGaussianMean = gaussianParameters(2, 2);
+if higherGaussianMean > rateLawXVal + typeOffset
+    distributionType = 2;
+else
+    distributionType = 1;
+end
     
 end
 
+
 %=======================================================================================================================================================
-function yhat = PlotComponentCurves(x, y, t, c, parameter)
+function yhat = plotComponentCurves(t, c, parameter)
 try
-	fontSize = 20;
 	% Get the means and widths.
 	means = parameter(1 : 2 : end);
 	widths = parameter(2 : 2 : end);
 	% Now plot results.
-% 	hFig2 = figure;
-% 	hFig2.Name = 'Fitted Component Curves';
-	% 	plot(x, y, '--', 'LineWidth', 2)
 	hold on;
 	yhat = zeros(1, length(t));
 	numGaussians = length(c);
-% 	legendStrings = cell(numGaussians + 2, 1);
     
     colorArray = ['#00E3CB'; '#67349C'];
     
@@ -107,30 +65,11 @@ try
 		% Get each component curve.
         xxx = linspace(0,1,100);
 		thisEstimatedCurve = c(k) .* gaussian(xxx, means(k), widths(k));
-%         thisEstimatedCurve = c(k) .* gaussian(t, means(k), widths(k));
 		% Plot component curves.
 		p = plot(xxx, thisEstimatedCurve,  'LineWidth', 2);
         p.Color = colorArray(k,:);
 		hold on;
-		% Overall curve estimate is the sum of the component curves.
-% 		yhat = yhat + thisEstimatedCurve;
-% 		legendStrings{k} = sprintf('Estimated Gaussian %d', k);
 	end
-	% Plot original summation curve, that is the actual curve.
-% 	plot(x, y, 'r-', 'LineWidth', 1)
-	% Plot estimated summation curve, that is the estimate of the curve.
-% 	plot(x, yhat, 'k--', 'LineWidth', 2)
-	grid on;
-	xlabel('RasGTP/Ras', 'FontSize', fontSize)
-	ylabel('Frequency', 'FontSize', fontSize)
-% 	caption = sprintf('Estimation of %d Gaussian Curves that will fit data.', numGaussians);
-% 	title(caption, 'FontSize', fontSize, 'Interpreter', 'none');
-	grid on
-% 	legendStrings{numGaussians+1} = sprintf('Actual original signal');
-% 	legendStrings{numGaussians+2} = sprintf('Sum of all %d Gaussians', numGaussians);
-% 	legend('RasGTP distribution', 'Values', 'Gaussian1', 'Gaussian2', 'FontSize', 10);
-% 	xlim(sort([x(1) x(end)]));
-	hFig2.WindowState = 'maximized';
 	drawnow;
 	
 catch ME
@@ -140,7 +79,7 @@ catch ME
 		mfilename, callStackString, ME.message);
 	WarnUser(errorMessage);
 end
-end % of PlotComponentCurves
+end % of plotComponentCurves
 
 %=======================================================================================================================================================
 function theError = fitgauss(lambda, t, y)
@@ -199,13 +138,13 @@ try
 	if stackLength <= 3
 		% Some problem in the OpeningFcn
 		% Only the first item is useful, so just alert on that.
-		[folder, baseFileName, ext] = fileparts(theStack(1).file);
+		[~, baseFileName, ext] = fileparts(theStack(1).file);
 		baseFileName = sprintf('%s%s', baseFileName, ext);	% Tack on extension.
 		callStackString = sprintf('%s in file %s, in the function %s, at line %d\n', callStackString, baseFileName, theStack(1).name, theStack(1).line);
 	else
 		% Got past the OpeningFcn and had a problem in some other function.
 		for k = 1 : length(theStack)-3
-			[folder, baseFileName, ext] = fileparts(theStack(k).file);
+			[~, baseFileName, ext] = fileparts(theStack(k).file);
 			baseFileName = sprintf('%s%s', baseFileName, ext);	% Tack on extension.
 			callStackString = sprintf('%s in file %s, in the function %s, at line %d\n', callStackString, baseFileName, theStack(k).name, theStack(k).line);
 		end
