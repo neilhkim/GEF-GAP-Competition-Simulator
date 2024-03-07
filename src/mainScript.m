@@ -1,6 +1,8 @@
 close all;
 % clear all;
 
+addpath('../lib')
+
 % Set 1/kCatGEF as the unit time.
 kCatGef = 1;
 % Set the kcat of GAP
@@ -197,9 +199,9 @@ end
 
 % Plot the result
 figure;
-plot(nSeconds,meanOfNormalizedRasGtpEverySecond,'LineWidth',2, 'Color', '#004C99');
+plot(nUnitTimes,meanOfNormalizedRasGtpEveryUnitTime,'LineWidth',2, 'Color', '#004C99');
 set(gca, 'CLim',[0 0.2],'FontSize',12,'FontWeight','bold','LineWidth',2);
-xlim ([0 size(nSeconds,2)])
+xlim ([0 size(nUnitTimes,2)])
 ylim ([0 1])
 title('The mean of normalized RasGTP every second')
 xlabel('Time (s)')
