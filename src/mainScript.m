@@ -1,100 +1,107 @@
-close all;
-% clear all;
+% --------------------------------------------------------------------------------------------------------------------
+% This script conducts a simulation of Ras signaling dynamics on an compartmentalized (corraled) in-vitro membrane, 
+% focusing on the interactions between GEF (Sos), GAP, and Ras in various states (GDP-bound and GTP-bound). 
+% It utilizes a stochastic approach to model the molecular interactions and changes over time within a corraled membrane. 
+% Key aspects of the simulation include initializing parameters that define the biochemical reaction rates, setting up a simulation environment, 
+% and dynamically updating the system using Gillespie method. 
+% Neil H. Kim and Albert A. Lee, 2024.
 
-addpath('../lib')
 
-% Set 1/kCatGEF as the unit time.
-kCatGef = 1;
-% Set the kcat of GAP
-kCatGap = 2^-2; %
-% Set the feedback strengths (propensity to bind to RasGtp than RasGdp)
-kOnGtp2KOnGdp = 2^0;
-% Set the SOS unbinding rate
-kOffGdp = 2^-2;
-% Set the koff of GEF from GTP and GDP the same (as default)
-kOffGtp2KOffGdp = 1;
-kOffGtp = kOffGdp * kOffGtp2KOffGdp;
+close all; % Close all open figures
+% clear all; % Uncomment to clear all variables from the workspace
+addpath('../lib') % Add the 'lib' directory to the path for accessing external functions
 
-rateLawXVal = 0.6;  % Based on this value, k_on's will be determined by solving the ODEs later.
+% Simulation parameters
+kCatGef = 1; % Set 1/kCatGEF as unit time
+kCatGap = 2^-2; % Set kcat of GAP
+kOnGtp2KOnGdp = 2^0; % Feedback strength: propensity to bind to RasGTP compared to RasGDP
+kOffGdp = 2^-2; % GEF unbinding rate from RasGDP
+kOffGtp2KOffGdp = 1; % Ratio of unbinding rates for RasGTP to RasGDP, set to 1 by default
+kOffGtp = kOffGdp * kOffGtp2KOffGdp; % Calculate unbinding rate from RasGTP
 
-% Set the grid length
-gridLen = 1;
+rateLawXVal = 0.6; % x-value used to determine the binding rates by solving ODEs later
+                   % x-value is defined as (# of RasGTP) / (# of RasGTP + # RasGDP)
 
-RAS_DENSITY = 1000;
-N_CORRALS = 200;
-N_MIN_DURATION = 30;
-LOWEST_AVG_X_REQD_FOR_DIP_TEST = 0.1; % If avg x is too low, we cannot draw conclusions about unimodal/bimodality
-N_TRACKED_VARIABLES = 5;
-TYPE_OFFSET = 0; % Offset to determine type2 distribution when the higher gaussian mean is higher than the rate law x-value by the offset.
+% Simulation grid and entity settings
+gridLen = 1; % Length of the grid
+RAS_DENSITY = 1000; % Density of Ras molecules
+N_CORRALS = 200; % Number of corrals
+N_MIN_DURATION = 30; % Minimum duration for the simulation
+LOWEST_AVG_X_REQD_FOR_DIP_TEST = 0.1; % Minimum average X required for the DIP test
+N_TRACKED_VARIABLES = 5; % Number of variables tracked in the simulation
+TYPE_OFFSET = 0; % Offset used to determine the distribution type in the DIP test
 
-% Automatically name the output folder as "outputN", where N is the lowest
-% number for such non-existing folder name.
-folderIndex = 1;
+% Create output directory if it doesn't exist
+folderIndex = 1; % Start with index 1 for naming output folders
 while exist(sprintf('.\\output%d', folderIndex), 'dir')
-    folderIndex = folderIndex + 1;
+    folderIndex = folderIndex + 1; % Increment index if folder already exists
 end
-mkdir(sprintf('.\\output%d', folderIndex));
+mkdir(sprintf('.\\output%d', folderIndex)); % Create the new output directory
 
-fprintf('\n kCatGap = %f \n', kCatGap);
-fprintf('\n kOnGtp2KOnGdp = %f \n',kOnGtp2KOnGdp);
-fprintf('\n kOffGdp = %f \n',kOffGdp);
-fprintf('\n kOffGtp = %f \n',kOffGtp);
+% Show initial parameter values
+fprintf('kCatGap = %f \n', kCatGap);
+fprintf('kOnGtp2KOnGdp = %f \n',kOnGtp2KOnGdp);
+fprintf('kOffGdp = %f \n',kOffGdp);
+fprintf('kOffGtp = %f \n',kOffGtp);
 
-nRasTotal = RAS_DENSITY * gridLen^2;
-nTargetRasGtp = rateLawXVal * nRasTotal;
-[SosRasGdp,SosRasGtp,RasGdp,kOnGdp] = getKOnGtp(kCatGap, kCatGef, kOnGtp2KOnGdp, kOffGdp, kOffGtp, nTargetRasGtp, nRasTotal); %kon*[K], binding rate to RasGDP
-str = sprintf('\n  Analytical solution for x=%f\n-> [kOnGdp = %f, kOnGtp = %f, RasGdp = %f, RasGtp = %f, SosRasGdp = %f, SosRasGtp = %f]\n', ...
-    rateLawXVal, kOnGdp, kOnGtp2KOnGdp * kOnGdp, RasGdp, nRasTotal-RasGdp-SosRasGdp-SosRasGtp, SosRasGdp, SosRasGtp);
-disp(str);
+nRasTotal = RAS_DENSITY * gridLen^2; % Total Ras molecules
+nTargetRasGtp = rateLawXVal * nRasTotal; % Target RasGTP based on rate law value
+
+% Solve for initial conditions using analytical solution
+[SosRasGdp,SosRasGtp,RasGdp,kOnGdp] = getKOnGtp(kCatGap, kCatGef, kOnGtp2KOnGdp, kOffGdp, kOffGtp, nTargetRasGtp, nRasTotal); % Solves for binding rate and concentrations. The binding rate kOnGdp is k_on (conventional on-rate) times the supposed concentration of GEF.
+str = sprintf('\n  Analytical solution for x=%f\n-> [kOnGdp = %f, kOnGtp = %f, RasGdp = %f, RasGtp = %f, SosRasGdp = %f, SosRasGtp = %f]\n', rateLawXVal, kOnGdp, kOnGtp2KOnGdp * kOnGdp, RasGdp, nRasTotal-RasGdp-SosRasGdp-SosRasGtp, SosRasGdp, SosRasGtp);
+disp(str); % Display the solution
+
 if length(kOnGdp) > 1
-    disp('Error in finding deterministic solution.');
+    disp('Error in finding deterministic solution.'); % Check for error in solution
     return;
 end
-kOnGtp = kOnGtp2KOnGdp * kOnGdp; %binding rate to RasGTP
 
-% Set the appropriate rxn time to run
+kOnGtp = kOnGtp2KOnGdp * kOnGdp; % Calculate binding rate to Ras-GTP
+
+% Simulation duration setup
 duration = 1 + nTargetRasGtp / 2 / (kOffGtp + nTargetRasGtp * kOnGdp) * kOffGdp;
-duration = duration * 2;
-duration = round(duration);
+duration = duration * 2; % Adjust duration based on simulation needs
+duration = round(duration); % Round to nearest whole number
 if duration > 20000
-    duration = 20000;
+    duration = 20000; % Cap the duration to avoid excessively long simulations
 end
 
-% Initialize random number generator
-rng('shuffle')
+% Initialize random number generator for simulation
+rng('shuffle');
 
 nTrackedVars = 5; % tracked variables: (t,nRasGtp,nRasGdp,nSosRasGtp,nSosRasGdp)
 
-% Set the time trace matrix for all tracked variabled and give me much
+% Prepare matrix to track time and variables across all corrals. Give me much
 % time points (10 * duration (in unit times))
 timeTraceAllCorrals = zeros(10 * double(duration), nTrackedVars * N_CORRALS);
 
-% Iterate over each corral
+% Simulation loop for each corral, iterating through the total number of corrals
 for iCorral = 1:N_CORRALS
-    % Print output message only under below condition
+    % Periodically output progress for every half of the total corrals processed
     if mod(iCorral, N_CORRALS/2) == 0
         str = sprintf(' Results: iCorral = %d out of %d', iCorral, N_CORRALS);
-        disp(str)
+        disp(str) % Display the progress
     end
 
-    % Initial condition setup
-    t = 0;
-    x_initial = 0;
-    nRasGtp = nRasTotal * x_initial;
-    nRasGdp = nRasTotal * (1-x_initial);
-    nSosRasGtp = 0;
-    nSosRasGdp = 0;
+    % Setting up initial conditions for the simulation within a corral
+    t = 0; % Initialize time
+    x_initial = 0; % Initial x-value ((# of RasGTP)/(# of RasGDP + # of RasGTP), assumed to be 0 for start)
+    nRasGtp = nRasTotal * x_initial; % Calculate initial number of RasGTP based on total Ras and initial concentration
+    nRasGdp = nRasTotal * (1-x_initial); % Remaining Ras are RasGDP
+    nSosRasGtp = 0; % Initial number of Sos bound to RasGTP
+    nSosRasGdp = 0; % Initial number of Sos bound to RasGDP
 
-    % Record the initial state
-    record = [t,nRasGtp,nRasGdp,nSosRasGtp,nSosRasGdp];
+    % Record the initial state for this corral
+    record = [t, nRasGtp, nRasGdp, nSosRasGtp, nSosRasGdp];
 
-    % Record index
+    % Initialize record index for storing simulation results
     recIdx = 0;
 
-    % Insert the record to the dedicated place for the current corral
-    timeTraceAllCorrals(recIdx+1,((iCorral-1)*nTrackedVars + 1) : iCorral*nTrackedVars) = record;
+    % Store the initial state record into the timeTraceAllCorrals array
+    timeTraceAllCorrals(recIdx+1, ((iCorral-1)*nTrackedVars + 1) : iCorral*nTrackedVars) = record;
 
-    % Gillespie algorithm
+    % Use the Gillespie algorithm for stochastic simulation, iterating until the simulation duration is reached
     while (t < duration) || (t < N_MIN_DURATION)
         r1 = kOnGtp * nRasGtp; % Rate of SOS binding to RasGtp
         r2 = kOnGdp * nRasGdp; % Rate of SOS binding to RasGdp
@@ -103,27 +110,26 @@ for iCorral = 1:N_CORRALS
         r5 = kCatGef * (nSosRasGtp + nSosRasGdp) / gridLen^2 * nRasGdp / gridLen^2; % Rate of SOS converting RasGdp to RasGtp
         r6 = kCatGap / gridLen^2 * nRasGtp / gridLen^2; % Rate of GAP converting RasGtp to RasGdp
 
-        % Combined rate
-        rT=r1+r2+r3+r4+r5+r6;
+        % Total rate of all reactions
+        rT = r1 + r2 + r3 + r4 + r5 + r6;
 
-        % Draw random time interval following exponential distribution
+        % Draw random time interval based on total rate, simulating the time to the next reaction
         drawT = rand;
         tau = 1/rT * log(1/drawT);
 
-        % Advance current time
+        % Advance simulation time by the drawn interval
         t = t + tau;
         t = double(t);
 
-        % Probability of each reaction for this time interval
-        p1=r1/rT;
-        p2=r2/rT;
-        p3=r3/rT;
-        p4=r4/rT;
-        p5=r5/rT;
+        % Determine the reaction that occurs based on their probabilities
+        p1 = r1 / rT;
+        p2 = r2 / rT;
+        p3 = r3 / rT;
+        p4 = r4 / rT;
+        p5 = r5 / rT;
+        drawReaction = rand; % Draw a random number to decide which reaction occurs
 
-        % Randomly determine the occurred reaction
-        drawReaction = rand;
-
+        % Update the system state based on the reaction that occurred
         if drawReaction < p1
             nRasGtp = nRasGtp - 1;
             nSosRasGtp = nSosRasGtp + 1;
@@ -144,38 +150,39 @@ for iCorral = 1:N_CORRALS
             nRasGdp=nRasGdp+1;
         end
 
-        % Record the trajectory under the below condition
-        if floor(t*10) > recIdx % recording every 0.1 unit time
-            % Increment record index
-            recIdx = recIdx + 1;
-
-            % Record
-            timeTraceAllCorrals(recIdx+1,(iCorral-1)*nTrackedVars + 1 : iCorral * nTrackedVars) ...
-                = [t,nRasGtp,nRasGdp,nSosRasGtp,nSosRasGdp];
+        % Record the updated state at specified time intervals
+        if floor(t*10) > recIdx % Condition to record data at fixed intervals (every 0.1 unit time)
+            recIdx = recIdx + 1; % Increment the record index
+            % Update the timeTraceAllCorrals array with the new state
+            timeTraceAllCorrals(recIdx+1, (iCorral-1)*nTrackedVars + 1 : iCorral * nTrackedVars) = [t, nRasGtp, nRasGdp, nSosRasGtp, nSosRasGdp];
         end
     end
 end % Full runtime for a corral end
 
-% Extract time trace of each value from the master record
-rasGtpTimeTrace = timeTraceAllCorrals(:,2:N_TRACKED_VARIABLES:N_CORRALS*N_TRACKED_VARIABLES);
-sosGtpTimeTrace = timeTraceAllCorrals(:,4:N_TRACKED_VARIABLES:N_CORRALS*N_TRACKED_VARIABLES);
-sosGdpTimeTrace = timeTraceAllCorrals(:,5:N_TRACKED_VARIABLES:N_CORRALS*N_TRACKED_VARIABLES);
-recordedTimeArray = timeTraceAllCorrals(:,1:N_TRACKED_VARIABLES:N_CORRALS*N_TRACKED_VARIABLES);
-dataLength = max(duration, N_MIN_DURATION);
+% Extracting specific time trace data from the comprehensive simulation results for further analysis
+rasGtpTimeTrace = timeTraceAllCorrals(:,2:N_TRACKED_VARIABLES:N_CORRALS*N_TRACKED_VARIABLES); % Extract RasGTP time trace data
+sosGtpTimeTrace = timeTraceAllCorrals(:,4:N_TRACKED_VARIABLES:N_CORRALS*N_TRACKED_VARIABLES); % Extract Sos-RasGTP complex time trace data
+sosGdpTimeTrace = timeTraceAllCorrals(:,5:N_TRACKED_VARIABLES:N_CORRALS*N_TRACKED_VARIABLES); % Extract Sos-RasGDP complex time trace data
+recordedTimeArray = timeTraceAllCorrals(:,1:N_TRACKED_VARIABLES:N_CORRALS*N_TRACKED_VARIABLES); % Extract time points of the recordings
+dataLength = max(duration, N_MIN_DURATION); % Determine the length of data based on the maximum of either the simulation duration or the minimum duration
 
-% Reorganize for every unit time
-nUnitTimes = 0:1:dataLength;
-rasGtpEveryUnitTime = reorganizeForEveryUnitTime(recordedTimeArray, rasGtpTimeTrace, dataLength, N_CORRALS);
-sosGtpEveryUnitTime = reorganizeForEveryUnitTime(recordedTimeArray, sosGtpTimeTrace, dataLength, N_CORRALS);
-sosGdpEveryUnitTime = reorganizeForEveryUnitTime(recordedTimeArray, sosGdpTimeTrace, dataLength, N_CORRALS);
 
-% Record the mean SOS-GTP and SOS-GDP numbers from all corrals
-meanOfSosGtpEveryUnitTime = mean(sosGtpEveryUnitTime,2);
-meanOfSosGdpEveryUnitTime = mean(sosGdpEveryUnitTime,2);
+% Reorganizing extracted time trace data for analysis at each unit time
+nUnitTimes = 0:1:dataLength; % Create an array representing each unit time interval up to the data length
+rasGtpEveryUnitTime = reorganizeForEveryUnitTime(recordedTimeArray, rasGtpTimeTrace, dataLength, N_CORRALS); % Reorganize RasGTP data to align with unit times
+sosGtpEveryUnitTime = reorganizeForEveryUnitTime(recordedTimeArray, sosGtpTimeTrace, dataLength, N_CORRALS); % Reorganize Sos-RasGTP data to align with unit times
+sosGdpEveryUnitTime = reorganizeForEveryUnitTime(recordedTimeArray, sosGdpTimeTrace, dataLength, N_CORRALS); % Reorganize Sos-RasGDP data to align with unit times
 
-% Record the mean of normalized RasGTP (1 means all Ras are RasGTP, 0 means all Ras are RasGDP).
-normalizedRasGtpEveryUnitTime = rasGtpEveryUnitTime/nRasTotal;
-meanOfNormalizedRasGtpEveryUnitTime = mean(normalizedRasGtpEveryUnitTime,2);
+
+% Calculating mean values of SOS-GTP and SOS-GDP across all corrals for each unit time
+meanOfSosGtpEveryUnitTime = mean(sosGtpEveryUnitTime,2); % Calculate mean SOS-GTP for each unit time
+meanOfSosGdpEveryUnitTime = mean(sosGdpEveryUnitTime,2); % Calculate mean SOS-GDP for each unit time
+
+% Calculating and recording the mean of normalized RasGTP 
+normalizedRasGtpEveryUnitTime = rasGtpEveryUnitTime/nRasTotal; % Normalize RasGTP counts by total Ras to get a proportion (== x-value)
+meanOfNormalizedRasGtpEveryUnitTime = mean(normalizedRasGtpEveryUnitTime,2); % Calculate the mean normalized RasGTP for each unit time
+
+% Saving processed data to .mat files for further analysis or visualization
 
 % Save norm RasGTP every unit time as .mat file
 if ~exist(sprintf('.\\output%d\\variables', folderIndex), 'dir')
@@ -189,12 +196,10 @@ lastNormRasGtpArray = normalizedRasGtpEveryUnitTime(end,:);
 filename = sprintf('.\\output%d\\variables\\endPointNormXDistribution.mat', folderIndex);
 save(filename,'lastNormRasGtpArray');
 
-% Check whether avg x-value is too low. If so, DIP test is not possible.
-if sum(lastNormRasGtpArray) / length(lastNormRasGtpArray) > LOWEST_AVG_X_REQD_FOR_DIP_TEST
-    bootStrapSampleSize = 100;
-    % Run the DIP test storing the result to p-value. Low p-value indicates
-    % non-unimodal distribution
-    [~, p] = HartigansDipSignifTest(normalizedRasGtpEveryUnitTime(end,:), bootStrapSampleSize);
+% Performing a DIP test to analyze the distribution of the last timepoint's normalized RasGTP values
+if sum(lastNormRasGtpArray) / length(lastNormRasGtpArray) > LOWEST_AVG_X_REQD_FOR_DIP_TEST % Check if the average X-value is sufficient for the DIP test
+    bootStrapSampleSize = 100; % Set the bootstrap sample size for the DIP test
+    [~, p] = HartigansDipSignifTest(normalizedRasGtpEveryUnitTime(end,:), bootStrapSampleSize); % Perform the DIP test and store the p-value, where low p-value indicates a non-unimodal distribution
 end
 
 % Plot the result
@@ -258,7 +263,14 @@ saveas(gcf,[sprintf('.\\output%d\\png\\', folderIndex),'histogram.png'])
 
 disp('Process Finished.')
 
+% The main script ends here.
+% ---------------------------------------------------------------------------------------
 
+
+% Analytical Solution for Binding Rates and Concentrations in the GEF(Sos)-GAP competition model.
+% This function analytically solves a set of equations representing the dynamics of Sos-RasGDP, Sos-RasGTP, RasGDP, and RasGTP
+% given the catalytic rates of GAP and GEF, feedback strengths, unbinding rates, target number of RasGTP, and total Ras.
+% The function returns the concentrations of Sos-RasGDP, Sos-RasGTP complexes, free RasGDP, and the binding rate of Sos to RasGDP (kOnGdp).
 function [SosRasGdp,SosRasGtp,RasGdp,kOnGdp] = getKOnGtp(kCatGap, kCatGef, kOnGtp2KOnGdp, kOffGdp, kOffGtp, nTargetRasGtp, nRasTotal)
 
 %setting all symbols involved in the equation
@@ -284,8 +296,11 @@ eqn5 =  SosRasGdp + SosRasGtp + RasGdp + nTargetRasGtp == nRasTotal;
 
 kOnGdp = double(kOnGdp);
 
-end
+end % from getKOnGtp()
 
+
+% This function reorganizes recorded time trace data so that it aligns with each unit time, making it easier to analyze and visualize.
+% It takes in a recorded time array, the input time trace data, the total data length, and the number of corrals as inputs.
 function traceEveryUnitTime = reorganizeForEveryUnitTime(recordedTimeArray, inputTimeTrace, dataLength, nCorrals)
 traceEveryUnitTime = zeros(dataLength,nCorrals);
 for j = 0:1:dataLength % record for every (integer) unit time
@@ -296,4 +311,4 @@ for j = 0:1:dataLength % record for every (integer) unit time
         traceEveryUnitTime(j+1,i) = inputTimeTrace(idxes,i);
     end
 end
-end
+end % from reorganizeForEveryUnitTime()
