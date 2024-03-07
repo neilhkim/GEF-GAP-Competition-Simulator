@@ -7,3 +7,8 @@ This repository stores the source codes of the programs used to model the stocha
 ## Code requirements:
 - Symbolic Math Toolbox.
 - Statistics and Machine Learning Toolbox.
+
+## Acknowledgements
+This project makes use of several external resources:
+- Hartigans Dip Test as implemented by Ferenc Mechler, 2002; and retrieved from http://nicprice.net/diptest/
+- Error Handling routines as provided by Mark Hayworth 2017; and retrieved from https://www.mathworks.com/matlabcentral/fileexchange/24224-magic-matlab-generic-imaging-component
