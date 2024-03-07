@@ -117,6 +117,17 @@ end
 end % of fitgauss()
 
 %=======================================================================================================================================================
+function g = gaussian(x, peakPosition, width)
+%  gaussian(x,pos,wid) = gaussian peak centered on pos, half-width=wid
+%  x may be scalar, vector, or matrix, pos and wid both scalar
+%  T. C. O'Haver, 1988
+% Examples: gaussian([0 1 2],1,2) gives result [0.5000    1.0000    0.5000]
+% plot(gaussian([1:100],50,20)) displays gaussian band centered at 50 with width 20.
+g = exp(-((x - peakPosition) ./ (0.60056120439323 .* width)) .^ 2);
+end % of gaussian()
+
+
+%=======================================================================================================================================================
 % Gets a string describing the call stack where each line is the filename, function name, and line number in that file.
 % Sample usage
 % try
@@ -128,6 +139,10 @@ end % of fitgauss()
 % 	WarnUser(errorMessage);
 % end
 function callStackString = GetCallStack(errorObject)
+% This function is adapted from 
+% Mark Hayworth (2024). MAGIC - MATLAB Generic Imaging Component 
+% (https://www.mathworks.com/matlabcentral/fileexchange/24224-magic-matlab-generic-imaging-component), 
+% MATLAB Central File Exchange. Retrieved March 7, 2024.
 try
 	theStack = errorObject.stack;
 	callStackString = '';
@@ -159,6 +174,10 @@ end % from callStackString
 %==========================================================================================================================
 % Pops up a warning message, and prints the error to the command window.
 function WarnUser(warningMessage)
+% This function is adapted from 
+% Mark Hayworth (2024). MAGIC - MATLAB Generic Imaging Component 
+% (https://www.mathworks.com/matlabcentral/fileexchange/24224-magic-matlab-generic-imaging-component), 
+% MATLAB Central File Exchange. Retrieved March 7, 2024.
 if nargin == 0
 	return; % Bail out if they called it without any arguments.
 end
@@ -183,13 +202,3 @@ catch ME
 	uiwait(warndlg(message));
 end
 end % from WarnUser()
-
-%=======================================================================================================================================================
-function g = gaussian(x, peakPosition, width)
-%  gaussian(x,pos,wid) = gaussian peak centered on pos, half-width=wid
-%  x may be scalar, vector, or matrix, pos and wid both scalar
-%  T. C. O'Haver, 1988
-% Examples: gaussian([0 1 2],1,2) gives result [0.5000    1.0000    0.5000]
-% plot(gaussian([1:100],50,20)) displays gaussian band centered at 50 with width 20.
-g = exp(-((x - peakPosition) ./ (0.60056120439323 .* width)) .^ 2);
-end % of gaussian()
