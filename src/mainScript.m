@@ -25,7 +25,7 @@ rateLawXVal = 0.6; % x-value used to determine the binding rates by solving ODEs
 % Simulation grid and entity settings
 gridLen = 1; % Length of the grid
 RAS_DENSITY = 1000; % Density of Ras molecules
-N_CORRALS = 200; % Number of corrals
+N_CORRALS = 500; % Number of corrals
 N_MIN_DURATION = 30; % Minimum duration for the simulation
 LOWEST_AVG_X_REQD_FOR_DIP_TEST = 0.1; % Minimum average X required for the DIP test
 N_TRACKED_VARIABLES = 5; % Number of variables tracked in the simulation
