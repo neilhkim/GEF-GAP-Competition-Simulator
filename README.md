@@ -13,7 +13,7 @@ GEF and GAP models SOS and p120, respectively.
 Three scripts are provided under src\.
 
 1. mainScript.m
-2. sosInhibitorSimulationScript.m
+2. gefInhibitorSimulationScript.m
 3. gefConcentrationTitrationScript.m
 
 ## Acknowledgements
