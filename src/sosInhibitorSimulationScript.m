@@ -5,14 +5,16 @@
 % Neil H. Kim and Albert A. Lee, 2024.
 
 close all;  % Close all open figure windows.
-clear all;  % Clear all variables from the workspace.
+% clear all;  % Clear all variables from the workspace.
+addpath('../lib') % Add the 'lib' directory to the path for accessing external functions
 disp('-- Stochastic Simulation Initiating --');  % Notify start of simulation.
 
-% Setup for output directory creation.
-folderIndex = 1;
+% Create output directory if it doesn't exist
+folderIndex = 1; % Start with index 1 for naming output folders
 while exist(sprintf('.\\output%d', folderIndex), 'dir')
-    folderIndex = folderIndex + 1;  % Increment folder index if it already exists.
+    folderIndex = folderIndex + 1; % Increment index if folder already exists
 end
+mkdir(sprintf('.\\output%d', folderIndex)); % Create the new output directory
 
 % Simulation parameters initialization.
 nSimulations = 200;  % Number of simulation runs.
@@ -215,11 +217,11 @@ meanOfSosGdpEveryUnitTime = mean(sosGdpEveryUnitTime,2);
 normalizedRasGtpEveryUnitTime = rasGtpEveryUnitTime/nRasTotal;
 meanOfNormalizedRasGtpEveryUnitTime = mean(normalizedRasGtpEveryUnitTime,2);
 
-
 % Saving processed data to .mat files for further analysis or visualization
 % Save RasGTP every unit time as .mat file
-filename = 'rasGtpEveryUnitTime.mat';
+filename = sprintf('.\\output%d\\rasGtpEveryUnitTime.mat', folderIndex);
 save(filename,'rasGtpEveryUnitTime')
+
 [~, p] = HartigansDipSignifTest(normalizedRasGtpEveryUnitTime(end,:), 100); % The 2nd parameter is sample size of boot-strap
 
 % Plot 1) the mean of normalized RasGTP, 2) all norm RasGTP traces, and 3) histogram of RasGTP/Ras values.
