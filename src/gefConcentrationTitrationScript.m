@@ -1,20 +1,28 @@
+% --------------------------------------------------------------------------------------------------------------------
+% This script conducts a simulation of Ras signaling dynamics on an compartmentalized (corraled) in-vitro membrane, 
+% focusing on the interactions between GEF (Sos), GAP, and Ras in various states (GDP-bound and GTP-bound). 
+% It utilizes a stochastic approach to model the molecular interactions and changes over time within a corraled membrane. 
+% This particular script tests the effect of GEF (Sos) concentration by titration.
+% Neil H. Kim and Albert A. Lee, 2024.
+
 clear all
+
 % Define the maximum value for the concentration titration.
 max = 11;
 
 % Loop through a range of values
 for i = 1:max
-    % Calculate k3 and k1 (binding rates, which correspond to concentrations) for each iteration, incrementally increasing them.
-    k3 = 0.01 * (i-1) * 0.00003 + 0.0000001;
-    k1 = 0.01 * (i-1) * 0.00003 + 0.0000001;
+    % Calculate k3 and k1 for each iteration, incrementally increasing them.
+    k3 = 0.01 * (i-1) * 0.00003 + 0.0000001; % GEF binding rate to RasGTP
+    k1 = 0.01 * (i-1) * 0.00003 + 0.0000001; % GEF binding rate to RasGDP
 
     % Set fixed values for k4 and k2.
-    k4 = 0.01 * 0.1;
-    k2 = 0.01 * 0.5;
+    k4 = 0.01 * 0.1; % GEF unbinding rate from SOS-RasGTP
+    k2 = 0.01 * 0.5; % GEF unbinding rate from SOS-RasGDP
 
     % Define catalytic rate constants
-    kcat1 = 0.01;
-    kcat2 = 0.01*0.5;
+    kcat1 = 0.01; % GEF's catalytic rate
+    kcat2 = 0.01*0.5; % GAP's catalytic rate
 
     % Number of total Ras molecules
     Rtotal = 1000;
