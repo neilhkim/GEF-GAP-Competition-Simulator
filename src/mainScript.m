@@ -14,10 +14,10 @@ addpath('../lib') % Add the 'lib' directory to the path for accessing external f
 % Simulation parameters
 kCatGef = 1; % Set 1/kCatGEF as unit time
 kCatGap = 2^-2; % Set kcat of GAP
-kOnGtp2KOnGdp = 2^0; % Feedback strength: propensity to bind to RasGTP compared to RasGDP
+kOnGtp2KOnGdp = 2^0; % Feedback strength: GEF's propensity to bind to RasGTP compared to RasGDP
 kOffGdp = 2^-2; % GEF unbinding rate from RasGDP
-kOffGtp2KOffGdp = 1; % Ratio of unbinding rates for RasGTP to RasGDP, set to 1 by default
-kOffGtp = kOffGdp * kOffGtp2KOffGdp; % Calculate unbinding rate from RasGTP
+kOffGtp2KOffGdp = 1; % Ratio of GEF's unbinding rates for RasGTP to RasGDP, set to 1 by default
+kOffGtp = kOffGdp * kOffGtp2KOffGdp; % Calculate GEF's unbinding rate from RasGTP
 
 rateLawXVal = 0.6; % x-value used to determine the binding rates by solving ODEs later
                    % x-value is defined as (# of RasGTP) / (# of RasGTP + # RasGDP)
@@ -57,7 +57,7 @@ if length(kOnGdp) > 1
     return;
 end
 
-kOnGtp = kOnGtp2KOnGdp * kOnGdp; % Calculate binding rate to Ras-GTP
+kOnGtp = kOnGtp2KOnGdp * kOnGdp; % Calculate binding rate of GEF (Sos) to Ras-GTP
 
 % Simulation duration setup
 duration = 1 + nTargetRasGtp / 2 / (kOffGtp + nTargetRasGtp * kOnGdp) * kOffGdp;
@@ -103,7 +103,7 @@ for iCorral = 1:N_CORRALS
 
     % Use the Gillespie algorithm for stochastic simulation, iterating until the simulation duration is reached
     while (t < duration) || (t < N_MIN_DURATION)
-        r1 = kOnGtp * nRasGtp; % Rate of SOS binding to RasGtp
+        r1 = kOnGtp * nRasGtp; % Rate of SOS (GEF) binding to RasGtp
         r2 = kOnGdp * nRasGdp; % Rate of SOS binding to RasGdp
         r3 = kOffGtp * nSosRasGtp; % Rate of SOS unbinding from RasGtp
         r4 = kOffGdp * nSosRasGdp; % Rate of SOS unbinding from RasGdp
@@ -270,7 +270,7 @@ disp('Process Finished.')
 % Analytical Solution for Binding Rates and Concentrations in the GEF(Sos)-GAP competition model.
 % This function analytically solves a set of equations representing the dynamics of Sos-RasGDP, Sos-RasGTP, RasGDP, and RasGTP
 % given the catalytic rates of GAP and GEF, feedback strengths, unbinding rates, target number of RasGTP, and total Ras.
-% The function returns the concentrations of Sos-RasGDP, Sos-RasGTP complexes, free RasGDP, and the binding rate of Sos to RasGDP (kOnGdp).
+% The function returns the concentrations of Sos-RasGDP, Sos-RasGTP complexes, free RasGDP, and the binding rate of SOS (GEF) to RasGDP (kOnGdp).
 function [SosRasGdp,SosRasGtp,RasGdp,kOnGdp] = getKOnGtp(kCatGap, kCatGef, kOnGtp2KOnGdp, kOffGdp, kOffGtp, nTargetRasGtp, nRasTotal)
 
 %setting all symbols involved in the equation
