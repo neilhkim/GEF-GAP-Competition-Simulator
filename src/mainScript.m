@@ -276,17 +276,17 @@ function [SosRasGdp,SosRasGtp,RasGdp,kOnGdp] = getKOnGtp(kCatGap, kCatGef, kOnGt
 %setting all symbols involved in the equation
 syms kOnGdp SosRasGdp SosRasGtp RasGdp real
 
-%eqn1=d(SosRasGdp)/dt
+% eqn1 = d(SosRasGdp)/dt == 0
 eqn1 = kOnGdp * RasGdp - kOffGdp * SosRasGdp == 0;
-%eqn2=d(SosRasGdp)/dt
+% eqn2 = d(SosRasGdp)/dt = 0
 eqn2 = kOnGtp2KOnGdp * kOnGdp * nTargetRasGtp - kOffGtp * SosRasGtp == 0;
-%eqn3=d(RasGtp)/dt
+% eqn3 = d(RasGtp)/dt == 0
 eqn3 = kCatGef * (SosRasGdp + SosRasGtp) * RasGdp - kCatGap * nTargetRasGtp ...
     - kOnGtp2KOnGdp * kOnGdp * nTargetRasGtp + kOffGtp * SosRasGtp == 0;
-%eqn4=d(RasGdp)/dt
+% eqn4 = d(RasGdp)/dt == 0
 eqn4 = -kCatGef * (SosRasGdp + SosRasGtp) * RasGdp + kCatGap * nTargetRasGtp ...
     - kOnGdp * RasGdp + kOffGdp * SosRasGdp == 0;
-%eqn5=total Ras conserve
+% eqn5 = total Ras conserve
 eqn5 =  SosRasGdp + SosRasGtp + RasGdp + nTargetRasGtp == nRasTotal;
 
 %Solve analytically
