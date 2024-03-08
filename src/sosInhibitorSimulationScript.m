@@ -223,7 +223,8 @@ save(filename,'rasGtpEveryUnitTime')
 [~, p] = HartigansDipSignifTest(normalizedRasGtpEveryUnitTime(end,:), 100); % The 2nd parameter is sample size of boot-strap
 
 % Plot 1) the mean of normalized RasGTP, 2) all norm RasGTP traces, and 3) histogram of RasGTP/Ras values.
-figure(1);
+f = figure(1);
+f.Position = [0 0 600 700];
 
 % 1) the mean of normalized RasGTP
 subplot(3,1,1);
