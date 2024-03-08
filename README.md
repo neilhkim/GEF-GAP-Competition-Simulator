@@ -8,6 +8,14 @@ GEF and GAP models SOS and p120, respectively.
 - Symbolic Math Toolbox.
 - Statistics and Machine Learning Toolbox.
 
+## Scripts
+
+Three scripts are provided under src\.
+
+1. mainScript.m
+2. sosInhibitorSimulationScript.m
+3. gefConcentrationTitrationScript.m
+
 ## Acknowledgements
 This project makes use of several external resources:
 - Hartigans Dip Test as implemented by Ferenc Mechler, 2002; and retrieved from http://nicprice.net/diptest/
