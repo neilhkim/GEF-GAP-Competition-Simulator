@@ -1,16 +1,18 @@
 % --------------------------------------------------------------------------------------------------------------------
 % This script conducts a simulation of Ras signaling dynamics on an compartmentalized (corraled) in-vitro membrane, 
-% focusing on the interactions between GEF (Sos), GAP, and Ras in various states (GDP-bound and GTP-bound). 
-% It utilizes a stochastic approach to model the molecular interactions and changes over time within a corraled membrane. 
+% focusing on the interactions between GEF (modelling Sos), GAP (modelling p120), and Ras molecules in various states (GDP-bound and GTP-bound). 
+% It uses stochastic a molecular interaction model and tracks changes of the amount of molecular species over time. 
 % This particular script tests the effect of GEF (Sos) concentration by titration.
 % Neil H. Kim and Albert A. Lee, 2024.
 
 clear all
 
-% Define the maximum value for the concentration titration.
+% Define the maximum value for the concentration titration factor.
 max = 11;
 
-% Loop through a range of values
+% Loop through a range of values and solve the analytical steady-state solutions 
+% for the concentration of different species SRd, SRt, Rd, and Rt, which are shorts
+% for Sos-RasGDP, Sos-RasGTP, RasGDP, and RasGTP.
 for i = 1:max
     % Calculate k3 and k1 for each iteration, incrementally increasing them.
     k3 = 0.01 * (i-1) * 0.00003 + 0.0000001; % GEF binding rate to RasGTP
@@ -52,8 +54,6 @@ for i = 1:max
     Rt_value(1:length(Rt),i) = double(Rt);
 end
 
-% Save the results to .mat files
-
 % Create output directory if it doesn't exist
 folderIndex = 1; % Start with index 1 for naming output folders
 while exist(sprintf('.\\output%d', folderIndex), 'dir')
@@ -61,6 +61,7 @@ while exist(sprintf('.\\output%d', folderIndex), 'dir')
 end
 mkdir(sprintf('.\\output%d', folderIndex)); % Create the new output directory
 
+% Save the results to .mat files
 foldername = sprintf('.\\output%d\\', folderIndex);
 save([foldername, 'SRd_value.mat'], 'SRd_value');
 save([foldername, 'SRt_value.mat'], 'SRt_value');
