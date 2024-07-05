@@ -1,9 +1,10 @@
-% This script simulates Ras signaling dynamics incorporating the competition between GEF (Sos) and GAP on Ras, with additional consideration for inhibitor kinetics.
+% This script simulates Ras signaling dynamics incorporating the competition between GEF (modeling Sos) and GAP (modeling p120) on Ras, with additional consideration for inhibitor kinetics.
 % Refer to the "main" script, which is devoid of inhibitor.
 % The simulation utilizes a stochastic approach to model the molecular interactions and changes over time within a corraled membrane.
 % Using Gillespie method, it dynamically tracks the system's evolution, specifically focusing on RasGTP and RasGDP concentrations and their interaction with Sos in the presence of inhibitors.
 % Neil H. Kim and Albert A. Lee, 2024.
 
+% Initialization
 close all;  % Close all open figure windows.
 % clear all;  % Clear all variables from the workspace.
 addpath('../lib') % Add the 'lib' directory to the path for accessing external functions
@@ -18,7 +19,7 @@ mkdir(sprintf('.\\output%d', folderIndex)); % Create the new output directory
 
 % Simulation parameters initialization.
 nSimulations = 200;  % Number of simulation runs.
-gridLength = 1;  % Grid length for simulation, A=gridLength^2 represents area.
+gridLength = 1;  % Grid length for simulation, A=gridLength^2 represents area. One can assume a um for its unit.
 
 % Inhibitor kinetics parameters.
 ki_on = 0.0001;  % On-rate for inhibitor binding.
@@ -41,18 +42,19 @@ nRasTotal = 1000 * gridLength^2;  % Total number of Ras molecules.
 
 % Time-related parameters for the simulation.
 duration = 5000;  % Total duration in unit times.
-samplefactor = 100;  % Sampling frequency for recording the system state.
 duration = round(duration);  % Ensure duration is an integer.
+samplefactor = 100;  % Sampling frequency for recording the system state.
 N_TRACKED_VARIABLES = 7;  % Number of variables being tracked in the simulation.
 
 % Initialize array to record the time trace of the system.
 recordedTimeTraceArray = zeros(10 * duration, N_TRACKED_VARIABLES * nSimulations);
 
-rng('shuffle');  % Initialize random number generator for stochastic elements.
+% Initialize random number generator for stochastic elements.
+rng('shuffle');  
 
 % Main simulation loop.
 for iSimulation = 1:nSimulations
-    % Periodic display of simulation progress.
+    % Periodicallu display simulation progress.
     if mod(iSimulation, nSimulations / 10) == 0
         str = sprintf('nSimulations = %d out of %d', iSimulation, nSimulations);
         disp(str);
@@ -81,8 +83,8 @@ for iSimulation = 1:nSimulations
         r2 = kOnGdp * nRasGdp;
         r3 = kOffGtp * nSosRasGtp;
         r4 = kOffGdp * nSosRasGdp;
-        r5 = kCatGef * (nSosRasGtp + nSosRasGdp) / gridLength^2 * nRasGdp;  % GEF catalyzed RasGDP to RasGTP conversion.
-        r6 = kCatGap * nGapPerGrid / gridLength^2 * nRasGtp;  % GAP catalyzed RasGTP to RasGDP conversion.
+        r5 = kCatGef * (nSosRasGtp + nSosRasGdp) / gridLength^2 * nRasGdp;  % GEF-catalyzed RasGDP to RasGTP conversion.
+        r6 = kCatGap * nGapPerGrid / gridLength^2 * nRasGtp;  % GAP-catalyzed RasGTP to RasGDP conversion.
         % Additional reactions for inhibitor binding/unbinding to/from Sos-Ras complexes and direct inhibitor effects on binding rates.
         r7 = ki_on * nSosRasGtp;
         r8 = ki_off * nSOSRti;
@@ -100,7 +102,7 @@ for iSimulation = 1:nSimulations
         t = t + tau;
         nReactionNumber = nReactionNumber + 1;
 
-        % Calculate probabilities for each reaction based on current rates and total rate.
+        % Calculate probabilities for each reaction based on current rates and the total rate.
         p1 = r1 / rT;
         p2 = r2 / rT;
         p3 = r3 / rT;
